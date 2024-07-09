@@ -1,1 +1,5 @@
 joblib
+pandas
+scikit-learn
+beautifulsoup4
+nltk
