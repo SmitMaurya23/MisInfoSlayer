@@ -8,29 +8,30 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 # Initialize Flask app
 app = Flask(__name__)
 
-# Load model and vectorizer
+# Load the sentence transformer once (smaller model)
+sentence_model = SentenceTransformer('all-MiniLM-L6-v2')
+
+# Define paths
 script_dir = os.path.dirname(os.path.abspath(__file__))
 model_path = os.path.join(script_dir, "ensemble_model.pkl")
 vectorizer_path = os.path.join(script_dir, "tfidf_vectorizer.pkl")
-
-try:
-    sentence_model = SentenceTransformer('all-MiniLM-L6-v2')
-    loaded_model = joblib.load(model_path)
-    loaded_vectorizer = joblib.load(vectorizer_path)
-except Exception as e:
-    print(f"Error loading model: {e}")
-    exit(1)
 
 def get_bert_embedding(text):
     return sentence_model.encode([text], convert_to_numpy=True).flatten()
 
 def predict_news(news_text):
     try:
+        # Load the model and vectorizer only when needed
+        loaded_model = joblib.load(model_path)
+        loaded_vectorizer = joblib.load(vectorizer_path)
+
         tfidf_features = loaded_vectorizer.transform([news_text]).toarray()
         bert_features = get_bert_embedding(news_text).reshape(1, -1)
         combined_features = np.hstack((tfidf_features, bert_features))
+
         prediction = loaded_model.predict(combined_features)
         probability = loaded_model.predict_proba(combined_features)[:, 1]
+        
         return prediction[0], probability[0]
     except Exception as e:
         return None, None
@@ -56,7 +57,5 @@ def detect():
     })
 
 if __name__ == "__main__":
-    import os
     port = int(os.environ.get("PORT", 10000))  # Default to 10000 if no PORT env variable is set
     app.run(host="0.0.0.0", port=port, debug=False)
-
