@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fake News Detector</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 500px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin: auto;
+        }
+        textarea {
+            width: 100%;
+            height: 100px;
+            padding: 10px;
+            margin-top: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            resize: none;
+        }
+        button {
+            margin-top: 10px;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            font-size: 18px;
+        }
+        .loader {
+            display: none;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 10px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Fake News Detector</h1>
+        <textarea id="newsText" placeholder="Enter news text here..."></textarea>
+        <br>
+        <button onclick="predictNews()">Predict</button>
+        <div class="loader" id="loader"></div>
+        <div class="result" id="result"></div>
+    </div>
+
+    <script>
+        async function predictNews() {
+            const newsText = document.getElementById("newsText").value.trim();
+            const resultDiv = document.getElementById("result");
+            const loader = document.getElementById("loader");
+
+            if (!newsText) {
+                resultDiv.innerHTML = "<p style='color:red;'>Please enter some text.</p>";
+                return;
+            }
+
+            resultDiv.innerHTML = "";
+            loader.style.display = "block";  // Show loader
+
+            try {
+                const response = await fetch("/api/user/detection", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ text: newsText })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `<p><strong>Prediction:</strong> ${data.prediction}</p>
+                                           <p><strong>Probability:</strong> ${data.probability * 100}%</p>`;
+                } else {
+                    resultDiv.innerHTML = `<p style='color:red;'>Error: ${data.error}</p>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p style='color:red;'>An error occurred. Please try again.</p>`;
+            } finally {
+                loader.style.display = "none";  // Hide loader after response
+            }
+        }
+    </script>
+</body>
+</html>
